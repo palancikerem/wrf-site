@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerem Palancı WRF-ARW </title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent: #2196F3;
+            --accent-hover: #1976D2;
+            --border: #333;
+        }
+
+        body 
+     
+        {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ÜST PANEL */
+        .controls {
+            background-color: var(--panel-bg);
+            padding: 12px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-right: 10px;
+        }
+
+        .select-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        select, button {
+            background-color: #2c2c2c;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button:hover {
+            background-color: #383838;
+        }
+
+        button.active {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* GÖRSEL ALANI */
+        .viewer {
+            flex: 1;
+            position: relative;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .viewer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            user-select: none;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            pointer-events: none;
+        }
+
+        .error-msg {
+            position: absolute;
+            color: #ff5252;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+        }
+
+        /* ALT ZAMAN ÇUBUĞU */
+        .timeline {
+            background-color: var(--panel-bg);
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        /* MOBİL DÜZENLEMELER */
+        @media (max-width: 768px) {
+            .controls { justify-content: center; }
+            .select-group { width: 100%; }
+            select { flex: 1; }
+            .btn-group { display: flex; width: 100%; justify-content: center; gap: 10px; margin-top: 10px;}
+            .btn-group button { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="logo">WRF-ARW 9+3+1km</div>
+        
+        <div class="select-group">
+            <select id="domainSelect">
+                <option value="d01">D01 - Türkiye (9km)</option>
+                <option value="d02">D02 - İstanbul Çevresi(3km)</option>
+                <option value="d03">D03 - İstanbul(1km)</option>
+            </select>
+
+            <select id="varSelect">
+                <optgroup label="Temel Parametreler">
+                    <option value="T2" selected>Sıcaklık (2m)</option>
+                    <option value="RAIN">Toplam Yağış</option>
+                    <option value="UVMET10">Rüzgar (10m)</option>
+                    <option value="MDBZ">Radar (dBZ)</option>
+                    <option value="SLP">Basınç (MSLP)</option>
+                    <option value="CLOUD">Bulutluluk</option>
+                </optgroup>
+                <optgroup label="Nem ve Hissedilen">
+                    <option value="RH2">Bağıl Nem (%)</option>
+                    <option value="TD2">Çiy Noktası</option>
+                    <option value="HEAT_INDEX">Hissedilen Sıcaklık</option>
+                </optgroup>
+                <optgroup label="Atmosferik Kararsızlık">
+                    <option value="CAPE">CAPE</option>
+                    <option value="CIN">CIN</option>
+                    <option value="SRH">SRH (0-3km)</option>
+                    <option value="SHEAR">Wind Shear (0-6km)</option>
+                </optgroup>
+                <optgroup label="Kış Parametreleri">
+                    <option value="SNOWH">Kar Yağışı</option>
+                    <option value="SNOWDEPTH">Kar Kalınlığı</option>
+                </optgroup>
+                <optgroup label="Üst Seviyeler">
+                    <option value="TEMP_850">850 hPa Sıcaklık</option>
+                    <option value="WIND_850">850 hPa Rüzgar</option>
+                    <option value="TEMP_500">500 hPa Sıcaklık</option>
+                    <option value="WIND_300">300 hPa Jet Akımı</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="btn-group">
+            <button id="prevBtn">❮</button>
+            <button id="playBtn">▶ Oynat</button>
+            <button id="nextBtn">❯</button>
+        </div>
+    </div>
+
+    <div class="viewer">
+        <div class="loading" id="loader">Yükleniyor...</div>
+        <div class="error-msg" id="errorMsg">
+            <h3>Görsel Bulunamadı</h3>
+            <p>Seçilen saat veya parametre için veri üretilmemiş olabilir.</p>
+        </div>
+        <img id="mapImage" src="" alt="Model Haritası">
+    </div>
+
+    <div class="timeline">
+        <div class="info-bar">
+            <span id="dateDisplay">--.--.---- --:-- UTC</span>
+            <span id="frameDisplay">0 / 0</span>
+        </div>
+        <input type="range" id="timeSlider" min="0" value="0" step="1">
+    </div>
+
+    <script>
+        // DOM Elemanları
+        const elements = {
+            img: document.getElementById('mapImage'),
+            domain: document.getElementById('domainSelect'),
+            variable: document.getElementById('varSelect'),
+            slider: document.getElementById('timeSlider'),
+            dateDisp: document.getElementById('dateDisplay'),
+            frameDisp: document.getElementById('frameDisplay'),
+            playBtn: document.getElementById('playBtn'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+            loader: document.getElementById('loader'),
+            errorMsg: document.getElementById('errorMsg')
+        };
+
+        // Durum Değişkenleri
+        let availableTimes = [];
+        let isPlaying = false;
+        let playInterval;
+        const animationSpeed = 500; // ms
+
+        // Başlatma
+        async function init() {
+            try {
+                // Python'un oluşturduğu JSON dosyasını çek
+                // NOT: Bu dosya images/ klasöründe olmalı
+                const response = await fetch('yeni_haritalar/file_list.json?nocache=' + new Date().getTime());
+                
+                if (!response.ok) throw new Error("Veri listesi alınamadı");
+                
+                const times = await response.json();
+                
+                // Zamanları sırala
+                availableTimes = times.sort();
+
+                if (availableTimes.length === 0) {
+                    alert("JSON dosyası boş! Python scriptini çalıştırdınız mı?");
+                    return;
+                }
+
+                // Slider'ı ayarla
+                elements.slider.max = availableTimes.length - 1;
+                elements.slider.value = 0;
+
+                // Event Listener'lar
+                elements.slider.addEventListener('input', updateMap);
+                elements.domain.addEventListener('change', updateMap);
+                elements.variable.addEventListener('change', updateMap);
+                
+                elements.playBtn.addEventListener('click', togglePlay);
+                elements.prevBtn.addEventListener('click', () => step(-1));
+                elements.nextBtn.addEventListener('click', () => step(1));
+
+                // Klavye kontrolü
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft') step(-1);
+                    if (e.key === 'ArrowRight') step(1);
+                    if (e.key === ' ') {
+                        e.preventDefault(); 
+                        togglePlay();
+                    }
+                });
+
+                // İlk görüntüyü yükle
+                updateMap();
+
+            } catch (error) {
+                console.error("Başlatma Hatası:", error);
+                elements.errorMsg.style.display = 'block';
+                elements.errorMsg.innerHTML = `<h3>Veri Yüklenemedi</h3><p>yeni_haritalar/file_list.json dosyası bulunamadı.<br>Python scriptini çalıştırdığınızdan emin olun.</p>`;
+            }
+        }
+
+        // Zaman formatlama (YYYYMMDD_HHMMSS -> DD.MM.YYYY HH:MM UTC)
+        function formatTime(timeStr) {
+            if (!timeStr) return "Bilinmiyor";
+            const y = timeStr.substring(0, 4);
+            const m = timeStr.substring(4, 6);
+            const d = timeStr.substring(6, 8);
+            const h = timeStr.substring(9, 11);
+            const min = timeStr.substring(11, 13);
+            return `${d}.${m}.${y} ${h}:${min} UTC`;
+        }
+
+        // Harita Güncelleme
+        function updateMap() {
+            const index = parseInt(elements.slider.value);
+            const timeVal = availableTimes[index];
+            const domVal = elements.domain.value;
+            const varVal = elements.variable.value;
+
+            // Dosya yolu: images/d01_T2_20251222_120000.png
+            const filename = `yeni_haritalar/${domVal}_${varVal}_${timeVal}.png`;
+
+            // UI Güncelleme
+            elements.dateDisp.innerText = formatTime(timeVal);
+            elements.frameDisp.innerText = `${index + 1} / ${availableTimes.length}`;
+            elements.loader.style.display = 'block';
+            elements.errorMsg.style.display = 'none';
+
+            // Preload işlemi (Yumuşak geçiş için)
+            const downloadingImage = new Image();
+            downloadingImage.onload = function() {
+                elements.img.src = this.src;
+                elements.loader.style.display = 'none';
+            };
+            
+            downloadingImage.onerror = function() {
+                elements.loader.style.display = 'none';
+                elements.errorMsg.style.display = 'block';
+                // Resim yoksa görseli gizle veya placeholder koy
+                // elements.img.src = 'placeholder.png'; 
+            };
+
+            downloadingImage.src = filename;
+        }
+
+        // İleri/Geri Adım
+        function step(direction) {
+            let newVal = parseInt(elements.slider.value) + direction;
+            
+            // Döngüsel geçiş
+            if (newVal >= availableTimes.length) newVal = 0;
+            if (newVal < 0) newVal = availableTimes.length - 1;
+
+            elements.slider.value = newVal;
+            updateMap();
+        }
+
+        // Oynat/Durdur
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            elements.playBtn.innerHTML = isPlaying ? "❚❚ Durdur" : "▶ Oynat";
+            elements.playBtn.classList.toggle('active', isPlaying);
+
+            if (isPlaying) {
+                playInterval = setInterval(() => step(1), animationSpeed);
+            } else {
+                clearInterval(playInterval);
+            }
+        }
+
+        // Uygulamayı Başlat
+        init();
+
+    </script>
+</body>
+</html>

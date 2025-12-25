@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kerem Palancı WRF-ARW </title>
+    <title>Kerem Palancı WRF-ARW</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,9 +15,7 @@
             --border: #333;
         }
 
-        body 
-     
-        {
+        body {
             margin: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -141,7 +138,6 @@
             accent-color: var(--accent);
         }
 
-        /* MOBİL DÜZENLEMELER */
         @media (max-width: 768px) {
             .controls { justify-content: center; }
             .select-group { width: 100%; }
@@ -159,8 +155,8 @@
         <div class="select-group">
             <select id="domainSelect">
                 <option value="d01">D01 - Türkiye (9km)</option>
-                <option value="d02">D02 - İstanbul Çevresi(3km)</option>
-                <option value="d03">D03 - İstanbul(1km)</option>
+                <option value="d02">D02 - Marmara (3km)</option>
+                <option value="d03">D03 - İstanbul (1km)</option>
             </select>
 
             <select id="varSelect">
@@ -221,7 +217,6 @@
     </div>
 
     <script>
-        // DOM Elemanları
         const elements = {
             img: document.getElementById('mapImage'),
             domain: document.getElementById('domainSelect'),
@@ -236,67 +231,56 @@
             errorMsg: document.getElementById('errorMsg')
         };
 
-        // Durum Değişkenleri
         let availableTimes = [];
         let isPlaying = false;
         let playInterval;
-        const animationSpeed = 500; // ms
+        const animationSpeed = 500;
 
-        // Başlatma
         async function init() {
             try {
-                // Python'un oluşturduğu JSON dosyasını çek
-                // NOT: Bu dosya images/ klasöründe olmalı
-                const response = await fetch('yeni_haritalar/file_list.json?nocache=' + new Date().getTime());
+                // Burada file_list.json dosyasını çekiyoruz
+                const response = await fetch('./yeni_haritalar/file_list.json?nocache=' + new Date().getTime());
                 
                 if (!response.ok) throw new Error("Veri listesi alınamadı");
                 
                 const times = await response.json();
-                
-                // Zamanları sırala
                 availableTimes = times.sort();
 
                 if (availableTimes.length === 0) {
-                    alert("JSON dosyası boş! Python scriptini çalıştırdınız mı?");
+                    elements.errorMsg.style.display = 'block';
+                    elements.errorMsg.innerHTML = `<h3>Veri Boş</h3><p>JSON dosyası bulundu ama içinde tarih yok.</p>`;
                     return;
                 }
 
-                // Slider'ı ayarla
                 elements.slider.max = availableTimes.length - 1;
                 elements.slider.value = 0;
 
-                // Event Listener'lar
+                // Dinleyiciler
                 elements.slider.addEventListener('input', updateMap);
                 elements.domain.addEventListener('change', updateMap);
                 elements.variable.addEventListener('change', updateMap);
-                
                 elements.playBtn.addEventListener('click', togglePlay);
                 elements.prevBtn.addEventListener('click', () => step(-1));
                 elements.nextBtn.addEventListener('click', () => step(1));
 
-                // Klavye kontrolü
+                // Klavye Ok Tuşları Kontrolü
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowLeft') step(-1);
                     if (e.key === 'ArrowRight') step(1);
-                    if (e.key === ' ') {
-                        e.preventDefault(); 
-                        togglePlay();
-                    }
+                    if (e.key === ' ') { e.preventDefault(); togglePlay(); }
                 });
 
-                // İlk görüntüyü yükle
                 updateMap();
 
             } catch (error) {
-                console.error("Başlatma Hatası:", error);
+                console.error("Hata:", error);
                 elements.errorMsg.style.display = 'block';
-                elements.errorMsg.innerHTML = `<h3>Veri Yüklenemedi</h3><p>yeni_haritalar/file_list.json dosyası bulunamadı.<br>Python scriptini çalıştırdığınızdan emin olun.</p>`;
+                elements.errorMsg.innerHTML = `<h3>Veri Bekleniyor...</h3><p>yeni_haritalar/file_list.json bulunamadı. Lütfen generator.py scriptini çalıştırın.</p>`;
             }
         }
 
-        // Zaman formatlama (YYYYMMDD_HHMMSS -> DD.MM.YYYY HH:MM UTC)
         function formatTime(timeStr) {
-            if (!timeStr) return "Bilinmiyor";
+            if (!timeStr) return "--.--.---- --:--";
             const y = timeStr.substring(0, 4);
             const m = timeStr.substring(4, 6);
             const d = timeStr.substring(6, 8);
@@ -305,57 +289,46 @@
             return `${d}.${m}.${y} ${h}:${min} UTC`;
         }
 
-        // Harita Güncelleme
         function updateMap() {
+            if (availableTimes.length === 0) return;
+
             const index = parseInt(elements.slider.value);
             const timeVal = availableTimes[index];
             const domVal = elements.domain.value;
             const varVal = elements.variable.value;
 
-            // Dosya yolu: images/d01_T2_20251222_120000.png
-            const filename = `yeni_haritalar/${domVal}_${varVal}_${timeVal}.png`;
+            // Python çıktısına tam uyumlu dosya yolu
+            const filename = `./yeni_haritalar/${domVal}_${varVal}_${timeVal}.png`;
 
-            // UI Güncelleme
             elements.dateDisp.innerText = formatTime(timeVal);
             elements.frameDisp.innerText = `${index + 1} / ${availableTimes.length}`;
             elements.loader.style.display = 'block';
             elements.errorMsg.style.display = 'none';
 
-            // Preload işlemi (Yumuşak geçiş için)
             const downloadingImage = new Image();
             downloadingImage.onload = function() {
                 elements.img.src = this.src;
                 elements.loader.style.display = 'none';
             };
-            
             downloadingImage.onerror = function() {
                 elements.loader.style.display = 'none';
                 elements.errorMsg.style.display = 'block';
-                // Resim yoksa görseli gizle veya placeholder koy
-                // elements.img.src = 'placeholder.png'; 
             };
-
             downloadingImage.src = filename;
         }
 
-        // İleri/Geri Adım
         function step(direction) {
             let newVal = parseInt(elements.slider.value) + direction;
-            
-            // Döngüsel geçiş
             if (newVal >= availableTimes.length) newVal = 0;
             if (newVal < 0) newVal = availableTimes.length - 1;
-
             elements.slider.value = newVal;
             updateMap();
         }
 
-        // Oynat/Durdur
         function togglePlay() {
             isPlaying = !isPlaying;
             elements.playBtn.innerHTML = isPlaying ? "❚❚ Durdur" : "▶ Oynat";
             elements.playBtn.classList.toggle('active', isPlaying);
-
             if (isPlaying) {
                 playInterval = setInterval(() => step(1), animationSpeed);
             } else {
@@ -363,9 +336,7 @@
             }
         }
 
-        // Uygulamayı Başlat
         init();
-
     </script>
 </body>
 </html>

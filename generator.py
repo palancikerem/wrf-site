@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore")
 # ⚙️ AYARLAR
 # ==========================================
 BASE_DIR = "/home/kerem/WRF_Build/WRFV4.5.2/test/em_real"
-OUTPUT_DIR = "/home/kerem/wrf_site/images"
+OUTPUT_DIR = "/home/kerem/wrf_site/yeni_haritalar"
 DOMAINS = ["d01", "d02", "d03"]
 DOMAIN_RES = {"d01": 9, "d02": 3, "d03": 1}
 ONLY_3H = False

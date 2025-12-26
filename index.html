@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kerem Palancı WRF-ARW</title>
+    <title>Kerem Palancı WRF-ARW Regional</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -150,44 +150,35 @@
 <body>
 
     <div class="controls">
-        <div class="logo">WRF-ARW 9+3+1km</div>
+        <div class="logo">WRF-ARW 6km</div>
         
         <div class="select-group">
-            <select id="domainSelect">
-                <option value="d01">D01 - Türkiye (9km)</option>
-                <option value="d02">D02 - Marmara (3km)</option>
-                <option value="d03">D03 - İstanbul (1km)</option>
+            <select id="regionSelect">
+                <option value="TR" selected>🇹🇷 Türkiye Geneli</option>
+                <option value="MARMARA">🚢 Marmara & Batı Karadeniz</option>
+                <option value="EGE">🌊 Ege Bölgesi & Denizi</option>
+                <option value="AKDENIZ">☀️ Akdeniz Bölgesi</option>
+                <option value="KARADENIZ">🌲 Orta & Doğu Karadeniz</option>
+                <option value="DOGU_ANADOLU">🏔️ Doğu & Güneydoğu Anadolu</option>
             </select>
 
             <select id="varSelect">
                 <optgroup label="Temel Parametreler">
                     <option value="T2" selected>Sıcaklık (2m)</option>
                     <option value="RAIN">Toplam Yağış</option>
+                    <option value="RAIN1H">Saatlik Yağış</option>
                     <option value="UVMET10">Rüzgar (10m)</option>
                     <option value="MDBZ">Radar (dBZ)</option>
                     <option value="SLP">Basınç (MSLP)</option>
-                    <option value="CLOUD">Bulutluluk</option>
-                </optgroup>
-                <optgroup label="Nem ve Hissedilen">
-                    <option value="RH2">Bağıl Nem (%)</option>
-                    <option value="TD2">Çiy Noktası</option>
-                    <option value="HEAT_INDEX">Hissedilen Sıcaklık</option>
-                </optgroup>
-                <optgroup label="Atmosferik Kararsızlık">
-                    <option value="CAPE">CAPE</option>
-                    <option value="CIN">CIN</option>
-                    <option value="SRH">SRH (0-3km)</option>
-                    <option value="SHEAR">Wind Shear (0-6km)</option>
-                </optgroup>
-                <optgroup label="Kış Parametreleri">
-                    <option value="SNOWH">Kar Yağışı</option>
-                    <option value="SNOWDEPTH">Kar Kalınlığı</option>
                 </optgroup>
                 <optgroup label="Üst Seviyeler">
                     <option value="TEMP_850">850 hPa Sıcaklık</option>
                     <option value="WIND_850">850 hPa Rüzgar</option>
                     <option value="TEMP_500">500 hPa Sıcaklık</option>
                     <option value="WIND_300">300 hPa Jet Akımı</option>
+                </optgroup>
+                <optgroup label="Nem & Diğer">
+                    <option value="RH2">Bağıl Nem (%)</option>
                 </optgroup>
             </select>
         </div>
@@ -203,7 +194,7 @@
         <div class="loading" id="loader">Yükleniyor...</div>
         <div class="error-msg" id="errorMsg">
             <h3>Görsel Bulunamadı</h3>
-            <p>Seçilen saat veya parametre için veri üretilmemiş olabilir.</p>
+            <p>Seçilen bölge, saat veya parametre henüz işlenmemiş olabilir.</p>
         </div>
         <img id="mapImage" src="" alt="Model Haritası">
     </div>
@@ -219,7 +210,7 @@
     <script>
         const elements = {
             img: document.getElementById('mapImage'),
-            domain: document.getElementById('domainSelect'),
+            region: document.getElementById('regionSelect'),
             variable: document.getElementById('varSelect'),
             slider: document.getElementById('timeSlider'),
             dateDisp: document.getElementById('dateDisplay'),
@@ -238,8 +229,8 @@
 
         async function init() {
             try {
-                // Burada file_list.json dosyasını çekiyoruz
-                const response = await fetch('./yeni_haritalar/file_list.json?nocache=' + new Date().getTime());
+                // images klasöründeki file_list.json çekiliyor
+                const response = await fetch('./images/file_list.json?nocache=' + new Date().getTime());
                 
                 if (!response.ok) throw new Error("Veri listesi alınamadı");
                 
@@ -248,7 +239,7 @@
 
                 if (availableTimes.length === 0) {
                     elements.errorMsg.style.display = 'block';
-                    elements.errorMsg.innerHTML = `<h3>Veri Boş</h3><p>JSON dosyası bulundu ama içinde tarih yok.</p>`;
+                    elements.errorMsg.innerHTML = `<h3>Veri Boş</h3><p>JSON bulundu ancak içinde tarih yok.</p>`;
                     return;
                 }
 
@@ -257,13 +248,13 @@
 
                 // Dinleyiciler
                 elements.slider.addEventListener('input', updateMap);
-                elements.domain.addEventListener('change', updateMap);
+                elements.region.addEventListener('change', updateMap);
                 elements.variable.addEventListener('change', updateMap);
                 elements.playBtn.addEventListener('click', togglePlay);
                 elements.prevBtn.addEventListener('click', () => step(-1));
                 elements.nextBtn.addEventListener('click', () => step(1));
 
-                // Klavye Ok Tuşları Kontrolü
+                // Klavye Kontrolü
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowLeft') step(-1);
                     if (e.key === 'ArrowRight') step(1);
@@ -275,7 +266,7 @@
             } catch (error) {
                 console.error("Hata:", error);
                 elements.errorMsg.style.display = 'block';
-                elements.errorMsg.innerHTML = `<h3>Veri Bekleniyor...</h3><p>yeni_haritalar/file_list.json bulunamadı. Lütfen generator.py scriptini çalıştırın.</p>`;
+                elements.errorMsg.innerHTML = `<h3>Sistem Hazırlanıyor</h3><p>images/file_list.json bekleniyor...</p>`;
             }
         }
 
@@ -294,11 +285,11 @@
 
             const index = parseInt(elements.slider.value);
             const timeVal = availableTimes[index];
-            const domVal = elements.domain.value;
+            const regVal = elements.region.value;
             const varVal = elements.variable.value;
 
-            // Python çıktısına tam uyumlu dosya yolu
-            const filename = `./yeni_haritalar/${domVal}_${varVal}_${timeVal}.png`;
+            // Python çıktısına tam uyumlu yol: {Bölge}_{Değişken}_{Zaman}.png
+            const filename = `./images/${regVal}_${varVal}_${timeVal}.png`;
 
             elements.dateDisp.innerText = formatTime(timeVal);
             elements.frameDisp.innerText = `${index + 1} / ${availableTimes.length}`;

@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kerem Palancı WRF-ARW Regional</title>
+    <title>Kerem Palancı WRF Model</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212;
-            --panel-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --accent: #2196F3;
-            --accent-hover: #1976D2;
-            --border: #333;
+            --bg-color: #0f0f0f;
+            --panel-bg: #1a1a1a;
+            --text-color: #efefef;
+            --accent: #0081ff;
+            --accent-hover: #0056b3;
+            --border: #2a2a2a;
         }
 
         body {
@@ -26,49 +26,60 @@
             overflow: hidden;
         }
 
-        /* ÜST PANEL */
+     
         .controls {
             background-color: var(--panel-bg);
-            padding: 12px 20px;
+            padding: 10px 20px;
             display: flex;
             gap: 15px;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
             z-index: 10;
+        }
+
+        .logo-box {
+            display: flex;
+            flex-direction: column;
         }
 
         .logo {
             font-weight: 800;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--accent);
-            margin-right: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .sub-logo {
+            font-size: 0.75rem;
+            font-weight: 600;
+            opacity: 0.6;
         }
 
         .select-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         select, button {
-            background-color: #2c2c2c;
+            background-color: #252525;
             color: white;
-            border: 1px solid #444;
+            border: 1px solid var(--border);
             padding: 8px 12px;
             border-radius: 6px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        select:focus, button:focus {
-            outline: none;
+        select:hover, button:hover {
             border-color: var(--accent);
         }
 
-        button:hover {
-            background-color: #383838;
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 129, 255, 0.2);
         }
 
         button.active {
@@ -76,7 +87,7 @@
             border-color: var(--accent);
         }
 
-        /* GÖRSEL ALANI */
+     
         .viewer {
             flex: 1;
             position: relative;
@@ -85,12 +96,15 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            background-image: radial-gradient(#1a1a1a 1px, transparent 1px);
+            background-size: 20px 20px;
         }
 
         .viewer img {
-            max-width: 100%;
-            max-height: 100%;
+            max-width: 98%;
+            max-height: 98%;
             object-fit: contain;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             user-select: none;
         }
 
@@ -99,50 +113,59 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.7);
-            padding: 10px 20px;
-            border-radius: 5px;
+            background: rgba(0,0,0,0.85);
+            padding: 15px 25px;
+            border-radius: 8px;
             display: none;
-            pointer-events: none;
+            z-index: 5;
+            font-weight: 600;
+            border: 1px solid var(--border);
         }
 
         .error-msg {
             position: absolute;
             color: #ff5252;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 8px;
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border-radius: 12px;
             display: none;
             text-align: center;
+            border: 1px solid #ff5252;
+            max-width: 400px;
         }
 
-        /* ALT ZAMAN ÇUBUĞU */
+    
         .timeline {
             background-color: var(--panel-bg);
-            padding: 15px 20px;
+            padding: 15px 25px;
             border-top: 1px solid var(--border);
         }
 
         .info-bar {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--accent);
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
+        #dateDisplay { color: var(--accent); }
+        #frameDisplay { opacity: 0.5; }
 
         input[type=range] {
             width: 100%;
             cursor: pointer;
             accent-color: var(--accent);
+            height: 6px;
+            border-radius: 3px;
         }
 
-        @media (max-width: 768px) {
-            .controls { justify-content: center; }
-            .select-group { width: 100%; }
-            select { flex: 1; }
-            .btn-group { display: flex; width: 100%; justify-content: center; gap: 10px; margin-top: 10px;}
+        @media (max-width: 900px) {
+            .controls { flex-direction: column; gap: 10px; padding: 15px; }
+            .select-group { width: 100%; flex-direction: column; }
+            .btn-group { width: 100%; display: flex; }
             .btn-group button { flex: 1; }
         }
     </style>
@@ -150,35 +173,42 @@
 <body>
 
     <div class="controls">
-        <div class="logo">WRF-ARW 6km</div>
+        <div class="logo-box">
+            <div class="logo">WRF-ARW Kerem Palancı</div>
+            <div class="sub-logo">GFS 0.25° ➔ 6km WRF</div>
+        </div>
         
         <div class="select-group">
             <select id="regionSelect">
-                <option value="TR" selected>🇹🇷 Türkiye Geneli</option>
-                <option value="MARMARA">🚢 Marmara & Batı Karadeniz</option>
-                <option value="EGE">🌊 Ege Bölgesi & Denizi</option>
-                <option value="AKDENIZ">☀️ Akdeniz Bölgesi</option>
-                <option value="KARADENIZ">🌲 Orta & Doğu Karadeniz</option>
-                <option value="DOGU_ANADOLU">🏔️ Doğu & Güneydoğu Anadolu</option>
+                <option value="TR" selected> Türkiye Geneli</option>
+                <option value="MARMARA">Marmara & Batı Karadeniz</option>
+                <option value="EGE">Ege Bölgesi</option>
+                <option value="AKDENIZ">Akdeniz Bölgesi</option>
+                <option value="KARADENIZ">Orta & Doğu Karadeniz</option>
+                <option value="DOGU_ANADOLU">Doğu & Güneydoğu Anadolu</option>
+                <option value="IC_ANADOLU">İç Anadolu Bölgesi</option>
             </select>
 
             <select id="varSelect">
-                <optgroup label="Temel Parametreler">
-                    <option value="T2" selected>Sıcaklık (2m)</option>
-                    <option value="RAIN">Toplam Yağış</option>
-                    <option value="RAIN1H">Saatlik Yağış</option>
-                    <option value="UVMET10">Rüzgar (10m)</option>
-                    <option value="MDBZ">Radar (dBZ)</option>
-                    <option value="SLP">Basınç (MSLP)</option>
+                <optgroup label="Yüzey Parametreleri">
+                    <option value="T2" selected>2m Sıcaklık (°C)</option>
+                    <option value="HEAT_INDEX">Hissedilen Sıcaklık (°C)</option>
+                    <option value="RAIN">Toplam Yağış (mm)</option>
+                    <option value="RAIN1H">Saatlik Yağış (mm)</option>
+                    <option value="UVMET10">10m Rüzgar Hamlesi (km/h)</option>
+                    <option value="SLP">Basınç (MSLP - hPa)</option>
                 </optgroup>
-                <optgroup label="Üst Seviyeler">
+                <optgroup label="Kar Verileri">
+                    <option value="SNOW">Toplam Kar Yağışı (cm)</option>
+                    <option value="SNOWDEPTH">Kar Derinliği (cm)</option>
+                </optgroup>
+                <optgroup label="Üst Seviye Envanteri">
                     <option value="TEMP_850">850 hPa Sıcaklık</option>
-                    <option value="WIND_850">850 hPa Rüzgar</option>
                     <option value="TEMP_500">500 hPa Sıcaklık</option>
-                    <option value="WIND_300">300 hPa Jet Akımı</option>
                 </optgroup>
-                <optgroup label="Nem & Diğer">
-                    <option value="RH2">Bağıl Nem (%)</option>
+                <optgroup label="Kararsızlık & Radar">
+                    <option value="CAPE">SBCAPE (J/kg)</option>
+                    <option value="MDBZ">Simüle Radar (dBZ)</option>
                 </optgroup>
             </select>
         </div>
@@ -191,17 +221,17 @@
     </div>
 
     <div class="viewer">
-        <div class="loading" id="loader">Yükleniyor...</div>
+        <div class="loading" id="loader">İşleniyor...</div>
         <div class="error-msg" id="errorMsg">
-            <h3>Görsel Bulunamadı</h3>
-            <p>Seçilen bölge, saat veya parametre henüz işlenmemiş olabilir.</p>
+            <h3>VERİ BULUNAMADI</h3>
+            <p id="errorDetail">Bu saat/parametre kombinasyonu henüz hazır değil.</p>
         </div>
-        <img id="mapImage" src="" alt="Model Haritası">
+        <img id="mapImage" src="" alt="WRF Model Haritası">
     </div>
 
     <div class="timeline">
         <div class="info-bar">
-            <span id="dateDisplay">--.--.---- --:-- UTC</span>
+            <span id="dateDisplay">Hazırlanıyor...</span>
             <span id="frameDisplay">0 / 0</span>
         </div>
         <input type="range" id="timeSlider" min="0" value="0" step="1">
@@ -219,59 +249,57 @@
             prevBtn: document.getElementById('prevBtn'),
             nextBtn: document.getElementById('nextBtn'),
             loader: document.getElementById('loader'),
-            errorMsg: document.getElementById('errorMsg')
+            errorMsg: document.getElementById('errorMsg'),
+            errorDetail: document.getElementById('errorDetail')
         };
 
         let availableTimes = [];
         let isPlaying = false;
         let playInterval;
-        const animationSpeed = 500;
+        const animationSpeed = 400; 
 
         async function init() {
             try {
-                // images klasöründeki file_list.json çekiliyor
-                const response = await fetch('./images/file_list.json?nocache=' + new Date().getTime());
                 
-                if (!response.ok) throw new Error("Veri listesi alınamadı");
+                const response = await fetch('./images/file_list.json?t=' + Date.now());
+                if (!response.ok) throw new Error("Dosya listesi (JSON) sunucuda bulunamadı.");
                 
-                const times = await response.json();
-                availableTimes = times.sort();
+                availableTimes = await response.json();
+                availableTimes.sort();
 
                 if (availableTimes.length === 0) {
-                    elements.errorMsg.style.display = 'block';
-                    elements.errorMsg.innerHTML = `<h3>Veri Boş</h3><p>JSON bulundu ancak içinde tarih yok.</p>`;
+                    showError("JSON boş. Henüz hiçbir harita üretilmemiş.");
                     return;
                 }
 
                 elements.slider.max = availableTimes.length - 1;
                 elements.slider.value = 0;
 
-                // Dinleyiciler
-                elements.slider.addEventListener('input', updateMap);
-                elements.region.addEventListener('change', updateMap);
-                elements.variable.addEventListener('change', updateMap);
-                elements.playBtn.addEventListener('click', togglePlay);
-                elements.prevBtn.addEventListener('click', () => step(-1));
-                elements.nextBtn.addEventListener('click', () => step(1));
+                
+                elements.slider.oninput = updateMap;
+                elements.region.onchange = updateMap;
+                elements.variable.onchange = updateMap;
+                elements.playBtn.onclick = togglePlay;
+                elements.prevBtn.onclick = () => step(-1);
+                elements.nextBtn.onclick = () => step(1);
 
-                // Klavye Kontrolü
-                document.addEventListener('keydown', (e) => {
+               
+                document.onkeydown = (e) => {
                     if (e.key === 'ArrowLeft') step(-1);
                     if (e.key === 'ArrowRight') step(1);
                     if (e.key === ' ') { e.preventDefault(); togglePlay(); }
-                });
+                };
 
                 updateMap();
 
             } catch (error) {
-                console.error("Hata:", error);
-                elements.errorMsg.style.display = 'block';
-                elements.errorMsg.innerHTML = `<h3>Sistem Hazırlanıyor</h3><p>images/file_list.json bekleniyor...</p>`;
+                showError(error.message);
             }
         }
 
         function formatTime(timeStr) {
-            if (!timeStr) return "--.--.---- --:--";
+            if (!timeStr) return "";
+            
             const y = timeStr.substring(0, 4);
             const m = timeStr.substring(4, 6);
             const d = timeStr.substring(6, 8);
@@ -283,36 +311,37 @@
         function updateMap() {
             if (availableTimes.length === 0) return;
 
-            const index = parseInt(elements.slider.value);
-            const timeVal = availableTimes[index];
-            const regVal = elements.region.value;
-            const varVal = elements.variable.value;
+            const idx = parseInt(elements.slider.value);
+            const time = availableTimes[idx];
+            const reg = elements.region.value;
+            const varCode = elements.variable.value;
 
-            // Python çıktısına tam uyumlu yol: {Bölge}_{Değişken}_{Zaman}.png
-            const filename = `./images/${regVal}_${varVal}_${timeVal}.png`;
+            
+            const url = `./images/${reg}_${varCode}_${time}.png`;
 
-            elements.dateDisp.innerText = formatTime(timeVal);
-            elements.frameDisp.innerText = `${index + 1} / ${availableTimes.length}`;
+            elements.dateDisp.innerText = formatTime(time);
+            elements.frameDisp.innerText = `KARE: ${idx + 1} / ${availableTimes.length}`;
             elements.loader.style.display = 'block';
             elements.errorMsg.style.display = 'none';
 
-            const downloadingImage = new Image();
-            downloadingImage.onload = function() {
-                elements.img.src = this.src;
+            const imgLoader = new Image();
+            imgLoader.onload = () => {
+                elements.img.src = url;
                 elements.loader.style.display = 'none';
             };
-            downloadingImage.onerror = function() {
+            imgLoader.onerror = () => {
                 elements.loader.style.display = 'none';
                 elements.errorMsg.style.display = 'block';
+                elements.errorDetail.innerText = `${url} bulunamadı.`;
             };
-            downloadingImage.src = filename;
+            imgLoader.src = url;
         }
 
-        function step(direction) {
-            let newVal = parseInt(elements.slider.value) + direction;
-            if (newVal >= availableTimes.length) newVal = 0;
-            if (newVal < 0) newVal = availableTimes.length - 1;
-            elements.slider.value = newVal;
+        function step(dir) {
+            let v = parseInt(elements.slider.value) + dir;
+            if (v >= availableTimes.length) v = 0;
+            if (v < 0) v = availableTimes.length - 1;
+            elements.slider.value = v;
             updateMap();
         }
 
@@ -320,11 +349,14 @@
             isPlaying = !isPlaying;
             elements.playBtn.innerHTML = isPlaying ? "❚❚ Durdur" : "▶ Oynat";
             elements.playBtn.classList.toggle('active', isPlaying);
-            if (isPlaying) {
-                playInterval = setInterval(() => step(1), animationSpeed);
-            } else {
-                clearInterval(playInterval);
-            }
+            if (isPlaying) playInterval = setInterval(() => step(1), animationSpeed);
+            else clearInterval(playInterval);
+        }
+
+        function showError(msg) {
+            elements.errorMsg.style.display = 'block';
+            elements.errorDetail.innerText = msg;
+            elements.loader.style.display = 'none';
         }
 
         init();

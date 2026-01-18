@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Forecast Model | Kerem Palancı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-bg: #1a1d29; --secondary-bg: #252936; --panel-bg: #2d3142;
+            --border-color: #3d4254; --text-primary: #e8eaed; --text-secondary: #9aa0a6;
+            /* AI Sayfası için Mor Tema */
+            --accent-color: #bb86fc; --accent-hover: #9955e8; --shadow: rgba(0, 0, 0, 0.3);
+        }
+        body {
+            background: linear-gradient(135deg, #1a1d29 0%, #252936 100%);
+            color: var(--text-primary); font-family: 'Roboto', sans-serif; overflow: hidden;
+        }
+
+        /* HEADER SECTION */
+        .header {
+            background: linear-gradient(to bottom, #2d3142 0%, #252936 100%);
+            border-bottom: 2px solid var(--border-color); box-shadow: 0 4px 12px var(--shadow);
+            position: relative; z-index: 100;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; border-bottom: 1px solid var(--border-color); }
+        .branding { display: flex; align-items: center; gap: 15px; }
+        
+        /* Logo Rengi Mor */
+        .logo-icon {
+            width: 42px; height: 42px; background: linear-gradient(135deg, var(--accent-color), #7c4dff);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 18px; color: white; box-shadow: 0 4px 8px rgba(187, 134, 252, 0.3);
+        }
+        .branding-text h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; }
+        .branding-text p { font-size: 0.75rem; color: var(--text-secondary); font-family: 'Roboto Mono', monospace; }
+        
+        /* Navigasyon Butonu */
+        .nav-btn {
+            background: var(--panel-bg); color: var(--text-primary); text-decoration: none;
+            padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-color);
+            font-size: 0.85rem; font-weight: 500; transition: all 0.2s; margin-right: 15px;
+            display: inline-block;
+        }
+        .nav-btn:hover { border-color: var(--accent-color); color: var(--accent-color); background: #353947; }
+
+        .model-info { background: var(--panel-bg); padding: 8px 15px; border-radius: 6px; border: 1px solid var(--border-color); text-align: right; }
+        .run-time { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; }
+        .run-date { font-size: 0.9rem; font-weight: 500; color: var(--accent-color); font-family: 'Roboto Mono', monospace; }
+
+        /* CONTROL PANEL */
+        .control-panel { display: grid; grid-template-columns: 2fr 2fr 1.5fr; gap: 15px; padding: 15px 30px; background: var(--secondary-bg); }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        .control-group label { font-size: 0.7rem; font-weight: 500; text-transform: uppercase; color: var(--text-secondary); }
+        
+        select, button {
+            background: var(--panel-bg); color: var(--text-primary); border: 1px solid var(--border-color);
+            padding: 10px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; outline: none; font-size: 0.85rem;
+        }
+        select:hover, button:hover { border-color: var(--accent-color); background: #353947; }
+        .playback-controls { display: flex; gap: 5px; }
+        .playback-controls button { flex: 1; font-weight: 500; }
+        .playback-controls button.active { background: var(--accent-color); border-color: var(--accent-color); }
+
+        /* VIEWER AREA */
+        .viewer-container {
+            position: relative; height: calc(100vh - 280px); background: #0d0f14;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .map-canvas { max-width: 98%; max-height: 98%; object-fit: contain; }
+        
+        .loading-overlay {
+            position: absolute; background: rgba(13, 15, 20, 0.8); padding: 15px 30px;
+            border-radius: 8px; display: none; z-index: 10; text-align: center; border: 1px solid var(--border-color);
+        }
+        .error-overlay {
+            position: absolute; background: rgba(30, 10, 10, 0.95); padding: 20px;
+            border: 1px solid #ff4444; border-radius: 8px; display: none; text-align: center; z-index: 20;
+        }
+
+        /* TIMELINE */
+        .timeline-section { background: var(--secondary-bg); border-top: 2px solid var(--border-color); padding: 15px 30px; }
+        .timeline-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .current-time { font-size: 1.2rem; font-weight: 500; font-family: 'Roboto Mono', monospace; color: var(--accent-color); }
+        .forecast-hour { background: var(--panel-bg); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.9rem; }
+        input[type="range"] { width: 100%; height: 6px; cursor: pointer; accent-color: var(--accent-color); }
+
+        @media (max-width: 768px) {
+            .control-panel { grid-template-columns: 1fr; padding: 10px; }
+            .viewer-container { height: 45vh; }
+            body { overflow-y: auto; height: auto; }
+            .header-top { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .nav-btn { width: 100%; text-align: center; margin: 5px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-top">
+            <div class="branding">
+                <div class="logo-icon">AI</div>
+                <div class="branding-text">
+                    <h1>FourCastNet AI</h1>
+                    <p>Kerem Palancı • ECMWF / NVIDIA AI</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center;">
+                <a href="index.html" class="nav-btn">← WRF Modeline Dön</a>
+                
+                <div class="model-info">
+                    <div class="run-time">Model Başlangıcı (UTC)</div>
+                    <div class="run-date" id="modelRun">Bekleniyor...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label>Bölge Seçimi</label>
+                <select id="regionSelect">
+                   <optgroup label="AI Kapsama Alanı">
+                        <option value="GLOBAL" selected>Global / Kuzey Yarımküre</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Parametre</label>
+                 <select id="varSelect">
+                    <optgroup label="Sinoptik Haritalar">
+                        <option value="AIZ500" selected>500hPa & MSLP (AI)</option>
+                        <option value="TEMP850">850hPa Sıcaklık (AI)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Playback</label>
+                <div class="playback-controls">
+                    <button id="prevBtn">◀</button>
+                    <button id="playBtn">▶ Play</button>
+                    <button id="nextBtn">▶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="viewer-container">
+        <div class="loading-overlay" id="loader">Yükleniyor...</div>
+        <div class="error-overlay" id="errorMsg">
+            <h3 style="color:#ff4444; margin-bottom:10px;">⚠ Görsel Bulunamadı</h3>
+            <p id="errorDetail" style="font-family:'Roboto Mono'; font-size:0.8rem; opacity:0.8"></p>
+        </div>
+        <img id="mapImage" class="map-canvas" src="" alt="AI Model Output">
+    </div>
+
+    <div class="timeline-section">
+        <div class="timeline-info">
+            <div style="display:flex; align-items:center; gap:20px">
+                <div class="current-time" id="dateDisplay">--.--.---- --:--</div>
+                <div class="forecast-hour" id="forecastHour">+00h</div>
+            </div>
+            <div id="frameDisplay" style="font-family:'Roboto Mono'; font-size:0.85rem; opacity:0.6">Frame: 0 / 0</div>
+        </div>
+        <input type="range" id="timeSlider" min="0" value="0" step="1">
+    </div>
+
+    <script>
+        const elements = {
+            img: document.getElementById('mapImage'),
+            region: document.getElementById('regionSelect'),
+            variable: document.getElementById('varSelect'),
+            slider: document.getElementById('timeSlider'),
+            dateDisp: document.getElementById('dateDisplay'),
+            frameDisp: document.getElementById('frameDisplay'),
+            forecastHour: document.getElementById('forecastHour'),
+            modelRun: document.getElementById('modelRun'),
+            playBtn: document.getElementById('playBtn'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+            loader: document.getElementById('loader'),
+            errorMsg: document.getElementById('errorMsg'),
+            errorDetail: document.getElementById('errorDetail')
+        };
+
+        let availableTimes = [];
+        let isPlaying = false;
+        let playInterval;
+
+        async function init() {
+            try {
+                // ÖNEMLİ: WRF listesiyle karışmasın diye 'ai_file_list.json' okuyoruz
+                const response = await fetch('./ai_images/ai_file_list.json?t=' + Date.now());
+                
+                if (!response.ok) throw new Error("JSON listesi yüklenemedi. Python scripti çalıştı mı?");
+                availableTimes = await response.json();
+                
+                availableTimes = availableTimes.filter(t => t && t.length >= 13);
+                availableTimes.sort();
+
+                if (availableTimes.length === 0) return;
+
+                const first = availableTimes[0];
+                elements.modelRun.innerText = `${first.substring(6,8)}.${first.substring(4,6)}.${first.substring(0,4)} ${first.substring(9,11)}:00Z`;
+                elements.slider.max = availableTimes.length - 1;
+                
+                elements.slider.oninput = updateMap;
+                elements.region.onchange = updateMap;
+                elements.variable.onchange = updateMap;
+                elements.playBtn.onclick = togglePlay;
+                elements.prevBtn.onclick = () => step(-1);
+                elements.nextBtn.onclick = () => step(1);
+
+                updateMap();
+            } catch (e) {
+                showError(e.message);
+            }
+        }
+
+        function updateMap() {
+            if (availableTimes.length === 0) return;
+
+            const idx = parseInt(elements.slider.value);
+            const time = availableTimes[idx];
+            const reg = elements.region.value;     // "GLOBAL"
+            const varCode = elements.variable.value; // "AIZ500" veya "TEMP850"
+            
+            // Dosya adı formatı: GLOBAL_AIZ500_YYYYMMDD_HHMMSS.webp
+            const filename = `${reg}_${varCode}_${time}.webp`;
+            const url = `./ai_images/${filename}`;
+
+            elements.dateDisp.innerText = `${time.substring(6,8)}.${time.substring(4,6)} | ${time.substring(9,11)}:${time.substring(11,13)} UTC`;
+            elements.frameDisp.innerText = `Frame: ${idx + 1} / ${availableTimes.length}`;
+            
+            // Forecast Hour
+            const start = new Date(availableTimes[0].substring(0,4), availableTimes[0].substring(4,6)-1, availableTimes[0].substring(6,8), availableTimes[0].substring(9,11));
+            const current = new Date(time.substring(0,4), time.substring(4,6)-1, time.substring(6,8), time.substring(9,11));
+            const diff = Math.round((current - start) / 3600000);
+            elements.forecastHour.innerText = `+${diff}h`;
+
+            elements.loader.style.display = 'block';
+            elements.errorMsg.style.display = 'none';
+
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                elements.img.src = url;
+                elements.loader.style.display = 'none';
+            };
+            tempImg.onerror = () => {
+                elements.loader.style.display = 'none';
+                elements.errorMsg.style.display = 'block';
+                elements.errorDetail.innerText = `Aranan: ${filename}`;
+            };
+            tempImg.src = url;
+        }
+
+        function step(dir) {
+            let v = parseInt(elements.slider.value) + dir;
+            if (v >= availableTimes.length) v = 0;
+            if (v < 0) v = availableTimes.length - 1;
+            elements.slider.value = v;
+            updateMap();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            elements.playBtn.innerHTML = isPlaying ? "⏸ Pause" : "▶ Play";
+            elements.playBtn.classList.toggle('active', isPlaying);
+            if (isPlaying) playInterval = setInterval(() => step(1), 500);
+            else clearInterval(playInterval);
+        }
+
+        function showError(m) {
+            elements.errorMsg.style.display = 'block';
+            elements.errorDetail.innerText = m;
+        }
+
+        init();
+    </script>
+</body>
+</html>
